@@ -15,6 +15,13 @@ const app = express();
 const PORT = 3000;
 const SECRET_KEY = process.env.JWT_SECRET || 'supersecretkey_prestasi';
 
+app.use((req, res, next) => {
+  const logLine = `[${new Date().toISOString()}] ${req.method} ${req.url}\n`;
+  console.log(logLine.trim());
+  fs.appendFileSync(path.join(__dirname, 'requests.log'), logLine);
+  next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -119,7 +126,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Auth
-app.post('/api/login', (req, res) => {
+app.post(['/api/login', '/api/login/'], (req, res) => {
   try {
     const { username, password } = req.body;
     const user: any = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
@@ -391,6 +398,11 @@ app.post('/api/database/restore', authenticateToken, upload.single('database'), 
   // Actually, re-init is hard because `db` is const. Let's just exit process and let nodemon/tsx restart it.
   res.json({ success: true, message: 'Database restored. Server will restart.' });
   setTimeout(() => process.exit(0), 1000);
+});
+
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('Global error handler:', err);
+  res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
 async function startServer() {

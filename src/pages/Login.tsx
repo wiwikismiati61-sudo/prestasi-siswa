@@ -21,10 +21,17 @@ export default function Login() {
 
       let data;
       try {
-        data = await res.json();
-      } catch (jsonErr) {
-        console.error('Failed to parse JSON response:', jsonErr);
-        throw new Error('Invalid server response');
+        const text = await res.text();
+        try {
+          data = JSON.parse(text);
+        } catch (jsonErr) {
+          console.error('Failed to parse JSON response. Raw text:', text);
+          throw new Error('Invalid server response: ' + text.substring(0, 100));
+        }
+      } catch (err: any) {
+        if (err.message.startsWith('Invalid server response')) throw err;
+        console.error('Failed to read response text:', err);
+        throw new Error('Failed to read server response');
       }
 
       if (res.ok) {
