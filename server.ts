@@ -19,8 +19,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Setup SQLite
-const isVercel = process.env.VERCEL === '1';
-const dbDir = isVercel ? '/tmp' : path.join(__dirname, 'data');
+const dbDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
@@ -76,10 +75,12 @@ try {
 }
 
 // Insert default admin if not exists
+const hash = bcrypt.hashSync('admin123', 10);
 const admin = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
 if (!admin) {
-  const hash = bcrypt.hashSync('admin123', 10);
   db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('admin', hash);
+} else {
+  db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hash, 'admin');
 }
 
 // Setup Multer for uploads
@@ -113,17 +114,26 @@ const authenticateToken = (req: any, res: any, next: any) => {
 
 // API Routes
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
 // Auth
 app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
-  const user: any = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-  if (!user) return res.status(400).json({ error: 'User not found' });
+  try {
+    const { username, password } = req.body;
+    const user: any = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+    if (!user) return res.status(400).json({ error: 'User not found' });
 
-  const validPassword = bcrypt.compareSync(password, user.password);
-  if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
+    const validPassword = bcrypt.compareSync(password, user.password);
+    if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
 
-  const token = jwt.sign({ id: user.id, username: user.username }, SECRET_KEY, { expiresIn: '24h' });
-  res.json({ token, username: user.username });
+    const token = jwt.sign({ id: user.id, username: user.username }, SECRET_KEY, { expiresIn: '24h' });
+    res.json({ token, username: user.username });
+  } catch (error: any) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
 });
 
 app.post('/api/change-password', authenticateToken, (req: any, res) => {
