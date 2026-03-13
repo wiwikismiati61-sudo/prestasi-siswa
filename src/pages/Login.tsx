@@ -11,6 +11,12 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Close mobile keyboard
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    
     setError('');
     setIsLoading(true);
 
@@ -39,14 +45,15 @@ export default function Login() {
       if (res.ok) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('username', data.username);
-        navigate('/dashboard');
+        // Force full page reload to ensure mobile keyboard and login state are completely cleared
+        window.location.href = '/dashboard';
       } else {
         setError(data.error || 'Login failed');
+        setIsLoading(false);
       }
     } catch (err: any) {
       console.error('Login exception:', err);
       setError(err.message || 'Network error. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };

@@ -155,7 +155,7 @@ app.post('/api/change-password', authenticateToken, (req: any, res) => {
 });
 
 // Dashboard Stats
-app.get('/api/dashboard', (req, res) => {
+app.get('/api/dashboard', authenticateToken, (req, res) => {
   const chartGrade = req.query.chartGrade as string || 'All';
   const tableGrade = req.query.tableGrade as string || 'All';
   const tableLimit = parseInt(req.query.tableLimit as string) || 5;
