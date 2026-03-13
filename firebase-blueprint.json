@@ -1,0 +1,177 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application, usually an admin.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's email address"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "user"],
+          "description": "Role of the user"
+        }
+      },
+      "required": ["email", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "A student in the school.",
+      "type": "object",
+      "properties": {
+        "nis": {
+          "type": "string",
+          "description": "Nomor Induk Siswa (Student ID number)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Student's full name"
+        },
+        "class_name": {
+          "type": "string",
+          "description": "Student's class"
+        }
+      },
+      "required": ["nis", "name", "class_name"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "description": "A teacher in the school.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Teacher's full name"
+        }
+      },
+      "required": ["name"]
+    },
+    "HomeroomTeacher": {
+      "title": "Homeroom Teacher",
+      "description": "A homeroom teacher in the school.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Teacher's full name"
+        }
+      },
+      "required": ["name"]
+    },
+    "CounselingTeacher": {
+      "title": "Counseling Teacher",
+      "description": "A counseling teacher in the school.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Teacher's full name"
+        }
+      },
+      "required": ["name"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A record of a student's achievement transaction.",
+      "type": "object",
+      "properties": {
+        "student_id": {
+          "type": "string",
+          "description": "Reference to the student document ID"
+        },
+        "student_name": {
+          "type": "string",
+          "description": "Denormalized student name"
+        },
+        "class_name": {
+          "type": "string",
+          "description": "Denormalized student class"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of the achievement (YYYY-MM-DD)"
+        },
+        "achievement_type": {
+          "type": "string",
+          "description": "Type of achievement"
+        },
+        "competition_name": {
+          "type": "string",
+          "description": "Name of the competition"
+        },
+        "level": {
+          "type": "string",
+          "description": "Level of the competition"
+        },
+        "rank": {
+          "type": "string",
+          "description": "Rank achieved"
+        },
+        "certificate_file": {
+          "type": "string",
+          "description": "URL to the uploaded certificate file"
+        },
+        "homeroom_teacher": {
+          "type": "string",
+          "description": "Name of the homeroom teacher"
+        },
+        "counseling_teacher": {
+          "type": "string",
+          "description": "Name of the counseling teacher"
+        },
+        "follow_up": {
+          "type": "string",
+          "description": "Follow up action"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the record was created"
+        }
+      },
+      "required": ["student_id", "date", "achievement_type", "competition_name", "rank", "level"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Collection of users (admins)."
+    },
+    "students": {
+      "schema": {
+        "$ref": "#/entities/Student"
+      },
+      "description": "Collection of students."
+    },
+    "teachers": {
+      "schema": {
+        "$ref": "#/entities/Teacher"
+      },
+      "description": "Collection of teachers."
+    },
+    "homeroom_teachers": {
+      "schema": {
+        "$ref": "#/entities/HomeroomTeacher"
+      },
+      "description": "Collection of homeroom teachers."
+    },
+    "counseling_teachers": {
+      "schema": {
+        "$ref": "#/entities/CounselingTeacher"
+      },
+      "description": "Collection of counseling teachers."
+    },
+    "transactions": {
+      "schema": {
+        "$ref": "#/entities/Transaction"
+      },
+      "description": "Collection of achievement transactions."
+    }
+  }
+}

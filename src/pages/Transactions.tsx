@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, FileText, Search, Edit2 } from 'lucide-react';
+import { getTransactions, getStudents, getHomeroomTeachers, getCounselingTeachers, addTransaction, updateTransaction, deleteTransaction } from '../services/db';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -9,8 +10,8 @@ export default function Transactions() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -26,23 +27,17 @@ export default function Transactions() {
 
   const fetchData = async () => {
     try {
-      const [transRes, studRes, homeRes, counsRes] = await Promise.all([
-        fetch('/api/transactions', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-        fetch('/api/students', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-        fetch('/api/homeroom_teachers', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-        fetch('/api/counseling_teachers', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+      const [transData, studData, homeData, counsData] = await Promise.all([
+        getTransactions(),
+        getStudents(),
+        getHomeroomTeachers(),
+        getCounselingTeachers()
       ]);
       
-      if (transRes.status === 401 || transRes.status === 403 || studRes.status === 401 || studRes.status === 403) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
-      }
-
-      setTransactions(await transRes.json());
-      setStudents(await studRes.json());
-      setHomeroomTeachers(await homeRes.json());
-      setCounselingTeachers(await counsRes.json());
+      setTransactions(transData);
+      setStudents(studData);
+      setHomeroomTeachers(homeData);
+      setCounselingTeachers(counsData);
     } catch (err) {
       console.error(err);
     }
@@ -54,37 +49,47 @@ export default function Transactions() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value !== null) {
-        data.append(key, value as string | Blob);
+    
+    // Convert formData to a simple object for Firestore
+    const dataToSave = {
+      date: formData.date,
+      student_id: formData.student_id,
+      achievement_type: formData.achievement_type,
+      competition_name: formData.competition_name,
+      rank: formData.rank,
+      level: formData.level,
+      homeroom_teacher: formData.homeroom_teacher,
+      counseling_teacher: formData.counseling_teacher,
+      // For now, we'll just ignore the certificate file or handle it differently
+      // In a real app, you'd upload it to Firebase Storage and save the URL
+    };
+
+    try {
+      if (editingId) {
+        await updateTransaction(editingId, dataToSave);
+      } else {
+        await addTransaction(dataToSave);
       }
-    });
 
-    const url = editingId ? `/api/transactions/${editingId}` : '/api/transactions';
-    const method = editingId ? 'PUT' : 'POST';
-
-    await fetch(url, {
-      method,
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: data
-    });
-
-    setIsModalOpen(false);
-    setEditingId(null);
-    setFormData({
-      date: new Date().toISOString().split('T')[0],
-      student_id: '',
-      achievement_type: 'Akademik',
-      competition_name: '',
-      rank: '1',
-      level: 'Antar Sekolah',
-      homeroom_teacher: '',
-      counseling_teacher: '',
-      certificate: null
-    });
-    setSelectedClass('');
-    fetchData();
+      setIsModalOpen(false);
+      setEditingId(null);
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        student_id: '',
+        achievement_type: 'Akademik',
+        competition_name: '',
+        rank: '1',
+        level: 'Antar Sekolah',
+        homeroom_teacher: '',
+        counseling_teacher: '',
+        certificate: null
+      });
+      setSelectedClass('');
+      fetchData();
+    } catch (err) {
+      console.error("Error saving transaction:", err);
+      alert("Gagal menyimpan transaksi.");
+    }
   };
 
   const handleEdit = (t: any) => {
@@ -106,18 +111,29 @@ export default function Transactions() {
 
   const confirmDelete = async () => {
     if (deletingId) {
-      await fetch(`/api/transactions/${deletingId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      setDeletingId(null);
-      fetchData();
+      try {
+        await deleteTransaction(deletingId);
+        setDeletingId(null);
+        fetchData();
+      } catch (err) {
+        console.error("Gagal menghapus transaksi:", err);
+        alert("Gagal menghapus transaksi.");
+      }
     }
   };
 
-  const filteredTransactions = transactions.filter(t => 
-    t.student_name.toLowerCase().includes(search.toLowerCase()) || 
-    t.competition_name.toLowerCase().includes(search.toLowerCase())
+  const enrichedTransactions = transactions.map(t => {
+    const student = students.find(s => s.id === t.student_id);
+    return {
+      ...t,
+      student_name: student ? student.name : 'Unknown',
+      class_name: student ? student.class_name : 'Unknown'
+    };
+  });
+
+  const filteredTransactions = enrichedTransactions.filter(t => 
+    (t.student_name || '').toLowerCase().includes(search.toLowerCase()) || 
+    (t.competition_name || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const uniqueClasses = Array.from(new Set(students.map(s => s.class_name))).sort();

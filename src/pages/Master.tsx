@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Upload, Plus, Trash2, Search } from 'lucide-react';
+import { getStudents, getHomeroomTeachers, getCounselingTeachers, deleteStudent, deleteHomeroomTeacher, deleteCounselingTeacher, addStudent, addHomeroomTeacher, addCounselingTeacher, bulkAddStudents, bulkAddHomeroomTeachers, bulkAddCounselingTeachers } from '../services/db';
 
 export default function Master() {
   const [activeTab, setActiveTab] = useState<'siswa' | 'walikelas' | 'bk'>('siswa');
@@ -13,26 +14,15 @@ export default function Master() {
 
   const fetchData = async () => {
     try {
-      const [studRes, homeRes, counsRes] = await Promise.all([
-        fetch('/api/students', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-        fetch('/api/homeroom_teachers', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-        fetch('/api/counseling_teachers', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+      const [studData, homeData, counsData] = await Promise.all([
+        getStudents(),
+        getHomeroomTeachers(),
+        getCounselingTeachers()
       ]);
       
-      if (studRes.status === 401 || studRes.status === 403) {
-        alert('Sesi Anda telah berakhir. Silakan login kembali.');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
-      }
-      
-      const studData = await studRes.json();
-      const homeData = await homeRes.json();
-      const counsData = await counsRes.json();
-      
-      if (Array.isArray(studData)) setStudents(studData);
-      if (Array.isArray(homeData)) setHomeroomTeachers(homeData);
-      if (Array.isArray(counsData)) setCounselingTeachers(counsData);
+      setStudents(studData);
+      setHomeroomTeachers(homeData);
+      setCounselingTeachers(counsData);
     } catch (err) {
       console.error(err);
     }
@@ -119,25 +109,9 @@ export default function Master() {
 
       if (formattedData.length > 0) {
         try {
-          const res = await fetch('/api/students/bulk', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ students: formattedData })
-          });
-          
-          if (res.ok) {
-            fetchData();
-            alert(`Berhasil mengunggah ${formattedData.length} data siswa.`);
-          } else if (res.status === 401 || res.status === 403) {
-            alert('Sesi Anda telah berakhir. Silakan login kembali.');
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-          } else {
-            alert('Gagal menyimpan data ke server.');
-          }
+          await bulkAddStudents(formattedData);
+          fetchData();
+          alert(`Berhasil mengunggah ${formattedData.length} data siswa.`);
         } catch (err) {
           console.error(err);
           alert('Terjadi kesalahan jaringan saat mengunggah.');
@@ -236,23 +210,20 @@ export default function Master() {
     if (teacherFileInputRef.current) teacherFileInputRef.current.value = '';
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Yakin ingin menghapus data ini?')) {
-      await fetch(`/api/students/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      await deleteStudent(id);
       fetchData();
     }
   };
 
-  const handleDeleteTeacher = async (id: number, type: 'walikelas' | 'bk') => {
+  const handleDeleteTeacher = async (id: string, type: 'walikelas' | 'bk') => {
     if (confirm('Yakin ingin menghapus data ini?')) {
-      const endpoint = type === 'bk' ? `/api/counseling_teachers/${id}` : `/api/homeroom_teachers/${id}`;
-      await fetch(endpoint, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      if (type === 'bk') {
+        await deleteCounselingTeacher(id);
+      } else {
+        await deleteHomeroomTeacher(id);
+      }
       fetchData();
     }
   };

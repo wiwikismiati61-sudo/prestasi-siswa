@@ -1,27 +1,36 @@
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { Download, Search, FileSpreadsheet } from 'lucide-react';
+import { getTransactions, getStudents } from '../services/db';
 
 export default function Reports() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetch('/api/transactions', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(res => {
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          return null;
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (data && Array.isArray(data)) setTransactions(data);
-      })
-      .catch(err => {});
+    const fetchReportsData = async () => {
+      try {
+        const [transData, studData] = await Promise.all([
+          getTransactions(),
+          getStudents()
+        ]);
+
+        const enrichedTransactions = transData.map(t => {
+          const student = studData.find(s => s.id === t.student_id);
+          return {
+            ...t,
+            student_name: student ? student.name : 'Unknown',
+            class_name: student ? student.class_name : 'Unknown'
+          };
+        });
+
+        setTransactions(enrichedTransactions);
+      } catch (err) {
+        console.error("Error fetching reports data:", err);
+      }
+    };
+
+    fetchReportsData();
   }, []);
 
   const handleDownloadExcel = () => {

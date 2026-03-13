@@ -1,15 +1,21 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Database, FileText, PieChart, Settings, LogOut, LogIn } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  const { user, isAdmin } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const handleLogin = () => {
@@ -18,7 +24,7 @@ export default function Layout() {
 
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    ...(token ? [
+    ...(user ? [
       { path: '/master', icon: Database, label: 'Master Data' },
       { path: '/transactions', icon: FileText, label: 'Transaksi' },
       { path: '/reports', icon: PieChart, label: 'Laporan' },
@@ -57,7 +63,7 @@ export default function Layout() {
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-          {token ? (
+          {user ? (
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
@@ -85,7 +91,7 @@ export default function Layout() {
             <img src="https://iili.io/KDFk4fI.png" alt="Logo" className="w-8 h-8 object-contain" referrerPolicy="no-referrer" />
             <h1 className="font-bold text-base text-slate-800 leading-tight">PRESTASI SISWA</h1>
           </div>
-          {token ? (
+          {user ? (
             <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg">
               <LogOut className="w-5 h-5" />
             </button>

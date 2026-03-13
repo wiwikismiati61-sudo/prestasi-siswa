@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Users, Trophy, Award, Medal, BarChart3, Database } from 'lucide-react';
+import { getStudents, getTransactions } from '../services/db';
 
 export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
@@ -9,25 +10,87 @@ export default function Dashboard() {
   const [tableLimit, setTableLimit] = useState(5);
 
   useEffect(() => {
-    fetch(`/api/dashboard?chartGrade=${chartGrade}&tableGrade=${tableGrade}&tableLimit=${tableLimit}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(res => {
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          return null;
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (data) {
-          setStats(data);
-        }
-      })
-      .catch(err => {
+    const fetchAndComputeStats = async () => {
+      try {
+        const [students, transactions] = await Promise.all([
+          getStudents(),
+          getTransactions()
+        ]);
+
+        const totalStudents = students.length;
+        const totalAchievements = transactions.length;
+        
+        const typeStatsMap: Record<string, number> = {};
+        transactions.forEach(t => {
+          typeStatsMap[t.achievement_type] = (typeStatsMap[t.achievement_type] || 0) + 1;
+        });
+        const typeStats = Object.keys(typeStatsMap).map(key => ({
+          achievement_type: key,
+          count: typeStatsMap[key]
+        }));
+
+        const classStatsMap: Record<string, { student_count: number, achievement_count: number }> = {};
+        students.forEach(s => {
+          if (!classStatsMap[s.class_name]) {
+            classStatsMap[s.class_name] = { student_count: 0, achievement_count: 0 };
+          }
+          classStatsMap[s.class_name].student_count++;
+        });
+
+        transactions.forEach(t => {
+          const student = students.find(s => s.id === t.student_id);
+          if (student) {
+            if (!classStatsMap[student.class_name]) {
+              classStatsMap[student.class_name] = { student_count: 0, achievement_count: 0 };
+            }
+            classStatsMap[student.class_name].achievement_count++;
+          }
+        });
+
+        const classStats = Object.keys(classStatsMap).map(key => ({
+          class_name: key,
+          ...classStatsMap[key]
+        }));
+
+        const classDetailsMap: Record<string, any[]> = {};
+        transactions.forEach(t => {
+          const student = students.find(s => s.id === t.student_id);
+          if (student) {
+            const className = student.class_name.toUpperCase().replace(/\s+/g, '');
+            if (!classDetailsMap[className]) classDetailsMap[className] = [];
+            classDetailsMap[className].push({
+              student_name: student.name,
+              competition_name: t.competition_name,
+              level: t.level
+            });
+          }
+        });
+
+        // Flatten classDetailsMap for the table
+        const classDetails: any[] = [];
+        Object.keys(classDetailsMap).forEach(className => {
+          classDetailsMap[className].forEach(detail => {
+            classDetails.push({
+              class_name: className,
+              ...detail
+            });
+          });
+        });
+
+        setStats({
+          totalStudents,
+          totalAchievements,
+          typeStats,
+          classStats,
+          classDetails
+        });
+      } catch (err) {
+        console.error("Error fetching dashboard stats:", err);
         setStats({ error: true });
-      });
+      }
+    };
+
+    fetchAndComputeStats();
   }, [chartGrade, tableGrade, tableLimit]);
 
   if (!stats) return <div className="p-8 text-slate-500">Memuat data...</div>;
