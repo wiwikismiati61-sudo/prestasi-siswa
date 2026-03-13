@@ -18,7 +18,13 @@ const SECRET_KEY = process.env.JWT_SECRET || 'supersecretkey_prestasi';
 app.use((req, res, next) => {
   const logLine = `[${new Date().toISOString()}] ${req.method} ${req.url}\n`;
   console.log(logLine.trim());
-  fs.appendFileSync(path.join(__dirname, 'requests.log'), logLine);
+  if (!process.env.VERCEL) {
+    try {
+      fs.appendFileSync(path.join(__dirname, 'requests.log'), logLine);
+    } catch (e) {
+      console.error('Failed to write log', e);
+    }
+  }
   next();
 });
 
@@ -26,7 +32,8 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Setup SQLite
-const dbDir = path.join(__dirname, 'data');
+const isVercel = !!process.env.VERCEL;
+const dbDir = isVercel ? '/tmp/data' : path.join(__dirname, 'data');
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
@@ -91,9 +98,9 @@ if (!admin) {
 }
 
 // Setup Multer for uploads
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -430,6 +437,8 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
 
 export default app;
