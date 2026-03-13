@@ -231,7 +231,7 @@ export default function Transactions() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
                     Tidak ada data prestasi ditemukan.
                   </td>
                 </tr>

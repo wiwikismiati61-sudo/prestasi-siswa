@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, User } from 'lucide-react';
+import { Lock, User, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     try {
       const res = await fetch('/api/login', {
@@ -44,6 +46,8 @@ export default function Login() {
     } catch (err: any) {
       console.error('Login exception:', err);
       setError(err.message || 'Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -68,7 +72,7 @@ export default function Login() {
         <div className="bg-white py-8 px-4 shadow-xl shadow-slate-200/50 sm:rounded-2xl sm:px-10 border border-slate-100">
           <form className="space-y-6" onSubmit={handleLogin}>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm break-words">
                 {error}
               </div>
             )}
@@ -84,8 +88,9 @@ export default function Login() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-xl py-3 border bg-slate-50/50"
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 text-base sm:text-sm border-slate-300 rounded-xl py-3 border bg-slate-50/50"
                   placeholder="Masukkan username"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -101,8 +106,9 @@ export default function Login() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-xl py-3 border bg-slate-50/50"
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 text-base sm:text-sm border-slate-300 rounded-xl py-3 border bg-slate-50/50"
                   placeholder="Masukkan password"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -110,10 +116,24 @@ export default function Login() {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                disabled={isLoading}
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Masuk ke Sistem
+                {isLoading ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />
+                    Memproses...
+                  </>
+                ) : (
+                  'Masuk ke Sistem'
+                )}
               </button>
+            </div>
+            
+            <div className="mt-4 text-center text-sm text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <p>Default Login:</p>
+              <p>Username: <span className="font-semibold text-slate-700">admin</span></p>
+              <p>Password: <span className="font-semibold text-slate-700">admin123</span></p>
             </div>
           </form>
         </div>

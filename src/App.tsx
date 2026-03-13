@@ -18,13 +18,13 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route path="/" element={<Layout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="master" element={<Master />} />
-          <Route path="transactions" element={<Transactions />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="master" element={<ProtectedRoute><Master /></ProtectedRoute>} />
+          <Route path="transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+          <Route path="settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -155,7 +155,7 @@ app.post('/api/change-password', authenticateToken, (req: any, res) => {
 });
 
 // Dashboard Stats
-app.get('/api/dashboard', authenticateToken, (req, res) => {
+app.get('/api/dashboard', (req, res) => {
   const chartGrade = req.query.chartGrade as string || 'All';
   const tableGrade = req.query.tableGrade as string || 'All';
   const tableLimit = parseInt(req.query.tableLimit as string) || 5;
@@ -384,18 +384,23 @@ app.get('/api/database/backup', authenticateToken, (req, res) => {
 app.post('/api/database/restore', authenticateToken, upload.single('database'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   
+  try {
+    // Test the uploaded file to see if it's a valid SQLite database
+    const testDb = new Database(req.file.path);
+    testDb.prepare('SELECT * FROM sqlite_master LIMIT 1').get();
+    testDb.close();
+  } catch (error) {
+    fs.unlinkSync(req.file.path); // Clean up invalid file
+    return res.status(400).json({ error: 'Invalid database file. Please upload a valid SQLite database.' });
+  }
+
   // Close current DB
   db.close();
   
   // Replace file
   fs.copyFileSync(req.file.path, dbPath);
+  fs.unlinkSync(req.file.path); // Clean up uploaded file
   
-  // Restart server or just re-open DB? Better to just let the process exit and restart, but we can't easily do that here.
-  // Actually, we can just re-open the DB. But since we use a global db object, it's tricky.
-  // Let's just send a success message and ask user to restart server manually, or we can re-instantiate.
-  // For simplicity, we'll just copy and the next request will fail until server restarts, or we can re-init.
-  // Let's re-init.
-  // Actually, re-init is hard because `db` is const. Let's just exit process and let nodemon/tsx restart it.
   res.json({ success: true, message: 'Database restored. Server will restart.' });
   setTimeout(() => process.exit(0), 1000);
 });

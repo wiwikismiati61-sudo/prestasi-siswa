@@ -1,9 +1,10 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Database, FileText, PieChart, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Database, FileText, PieChart, Settings, LogOut, LogIn } from 'lucide-react';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -11,12 +12,18 @@ export default function Layout() {
     navigate('/login');
   };
 
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/master', icon: Database, label: 'Master Data' },
-    { path: '/transactions', icon: FileText, label: 'Transaksi' },
-    { path: '/reports', icon: PieChart, label: 'Laporan' },
-    { path: '/settings', icon: Settings, label: 'Pengaturan' },
+    ...(token ? [
+      { path: '/master', icon: Database, label: 'Master Data' },
+      { path: '/transactions', icon: FileText, label: 'Transaksi' },
+      { path: '/reports', icon: PieChart, label: 'Laporan' },
+      { path: '/settings', icon: Settings, label: 'Pengaturan' },
+    ] : []),
   ];
 
   return (
@@ -50,13 +57,23 @@ export default function Layout() {
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-          >
-            <LogOut className="w-5 h-5 text-slate-400" />
-            Logout
-          </button>
+          {token ? (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="w-5 h-5 text-slate-400" />
+              Logout
+            </button>
+          ) : (
+            <button
+              onClick={handleLogin}
+              className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            >
+              <LogIn className="w-5 h-5 text-slate-400" />
+              Login
+            </button>
+          )}
         </div>
       </aside>
 
@@ -68,9 +85,15 @@ export default function Layout() {
             <img src="https://iili.io/KDFk4fI.png" alt="Logo" className="w-8 h-8 object-contain" referrerPolicy="no-referrer" />
             <h1 className="font-bold text-base text-slate-800 leading-tight">PRESTASI SISWA</h1>
           </div>
-          <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg">
-            <LogOut className="w-5 h-5" />
-          </button>
+          {token ? (
+            <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg">
+              <LogOut className="w-5 h-5" />
+            </button>
+          ) : (
+            <button onClick={handleLogin} className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
+              <LogIn className="w-5 h-5" />
+            </button>
+          )}
         </div>
         
         <Outlet />
