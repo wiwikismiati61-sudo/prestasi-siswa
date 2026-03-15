@@ -154,20 +154,26 @@ export default function Master() {
         }
 
         let nameColIndex = -1;
+        let headerRowIndex = 0;
         for (let i = 0; i < Math.min(5, data.length); i++) {
           const row = data[i];
           if (!Array.isArray(row)) continue;
           const nIdx = row.findIndex(cell => typeof cell === 'string' && ['nama', 'name', 'guru', 'teacher'].some(term => cell.toLowerCase().replace(/[^a-z0-9]/g, '').includes(term)));
           if (nIdx !== -1) {
             nameColIndex = nIdx;
+            headerRowIndex = i;
             break;
           }
         }
 
-        if (nameColIndex === -1) nameColIndex = 0;
+        let startIndex = headerRowIndex + 1;
+        if (nameColIndex === -1) {
+          nameColIndex = 0;
+          startIndex = 0;
+        }
 
         const formattedData = [];
-        for (let i = 1; i < data.length; i++) {
+        for (let i = startIndex; i < data.length; i++) {
           const row = data[i];
           if (!Array.isArray(row) || row.length === 0) continue;
           const nameStr = String(row[nameColIndex] || '').trim();
@@ -178,22 +184,13 @@ export default function Master() {
 
         if (formattedData.length > 0) {
           try {
-            const endpoint = activeTab === 'bk' ? '/api/counseling_teachers/bulk' : '/api/homeroom_teachers/bulk';
-            const res = await fetch(endpoint, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              },
-              body: JSON.stringify({ teachers: formattedData })
-            });
-            
-            if (res.ok) {
-              fetchData();
-              alert(`Berhasil mengunggah ${formattedData.length} data guru.`);
+            if (activeTab === 'bk') {
+              await bulkAddCounselingTeachers(formattedData);
             } else {
-              alert('Gagal menyimpan data ke server.');
+              await bulkAddHomeroomTeachers(formattedData);
             }
+            fetchData();
+            alert(`Berhasil mengunggah ${formattedData.length} data guru.`);
           } catch (err) {
             console.error(err);
             alert('Terjadi kesalahan jaringan saat mengunggah.');

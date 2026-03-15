@@ -29,22 +29,30 @@ export default function Dashboard() {
           count: typeStatsMap[key]
         }));
 
-        const classStatsMap: Record<string, { student_count: number, achievement_count: number }> = {};
+        const classStatsMap: Record<string, { student_count: number, achieving_student_count: number }> = {};
         students.forEach(s => {
           if (!classStatsMap[s.class_name]) {
-            classStatsMap[s.class_name] = { student_count: 0, achievement_count: 0 };
+            classStatsMap[s.class_name] = { student_count: 0, achieving_student_count: 0 };
           }
           classStatsMap[s.class_name].student_count++;
         });
 
+        const studentAchievementCount: Record<string, { name: string, class_name: string, count: number }> = {};
         transactions.forEach(t => {
           const student = students.find(s => s.id === t.student_id);
           if (student) {
-            if (!classStatsMap[student.class_name]) {
-              classStatsMap[student.class_name] = { student_count: 0, achievement_count: 0 };
+            if (!studentAchievementCount[student.id]) {
+              studentAchievementCount[student.id] = { name: student.name, class_name: student.class_name, count: 0 };
             }
-            classStatsMap[student.class_name].achievement_count++;
+            studentAchievementCount[student.id].count++;
           }
+        });
+
+        Object.values(studentAchievementCount).forEach(student => {
+          if (!classStatsMap[student.class_name]) {
+            classStatsMap[student.class_name] = { student_count: 0, achieving_student_count: 0 };
+          }
+          classStatsMap[student.class_name].achieving_student_count++;
         });
 
         const classStats = Object.keys(classStatsMap).map(key => ({
@@ -52,37 +60,32 @@ export default function Dashboard() {
           ...classStatsMap[key]
         }));
 
-        const classDetailsMap: Record<string, any[]> = {};
-        transactions.forEach(t => {
-          const student = students.find(s => s.id === t.student_id);
-          if (student) {
-            const className = student.class_name.toUpperCase().replace(/\s+/g, '');
-            if (!classDetailsMap[className]) classDetailsMap[className] = [];
-            classDetailsMap[className].push({
-              student_name: student.name,
-              competition_name: t.competition_name,
-              level: t.level
-            });
-          }
-        });
+        const classDetails: any[] = Object.values(studentAchievementCount).map(student => ({
+          class_name: student.class_name.toUpperCase().replace(/\s+/g, ''),
+          name: student.name,
+          achievement_count: student.count
+        }));
 
-        // Flatten classDetailsMap for the table
-        const classDetails: any[] = [];
-        Object.keys(classDetailsMap).forEach(className => {
-          classDetailsMap[className].forEach(detail => {
-            classDetails.push({
-              class_name: className,
-              ...detail
-            });
-          });
-        });
+        classDetails.sort((a, b) => b.achievement_count - a.achievement_count);
+
+        let filteredTopStudents = Object.values(studentAchievementCount);
+        if (tableGrade !== 'All') {
+          filteredTopStudents = filteredTopStudents.filter(s => s.class_name.startsWith(tableGrade));
+        }
+        filteredTopStudents.sort((a, b) => b.count - a.count);
+        const topStudents = filteredTopStudents.slice(0, tableLimit).map(s => ({
+          name: s.name,
+          class_name: s.class_name,
+          achievement_count: s.count
+        }));
 
         setStats({
           totalStudents,
-          totalAchievements,
+          totalTransactions: totalAchievements,
           typeStats,
           classStats,
-          classDetails
+          classDetails,
+          topStudents
         });
       } catch (err) {
         console.error("Error fetching dashboard stats:", err);
@@ -118,7 +121,7 @@ export default function Dashboard() {
     return {
       class_name: c,
       student_count: found ? found.student_count : 0,
-      achievement_count: found ? found.achievement_count : 0
+      achieving_student_count: found ? found.achieving_student_count : 0
     };
   });
 
@@ -230,7 +233,7 @@ export default function Dashboard() {
                   cursor={{ fill: '#f8fafc' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
-                <Bar dataKey="student_count" name="Jumlah Siswa" fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="achieving_student_count" name="Siswa Berprestasi" fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -359,7 +362,7 @@ export default function Dashboard() {
                 </div>
               ))
             ) : (
-              <div className="py-12 text-center text-slate-400">Belum ada data siswa berprestasi</div>
+              <div className="py-12 text-center text-slate-400 col-span-full">Belum ada data siswa berprestasi</div>
             )}
           </div>
         </div>
