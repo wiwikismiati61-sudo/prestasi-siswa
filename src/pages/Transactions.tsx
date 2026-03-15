@@ -18,7 +18,7 @@ export default function Transactions() {
     student_id: '',
     achievement_type: 'Akademik',
     competition_name: '',
-    rank: '1',
+    rank: 'Juara 1',
     level: 'Antar Sekolah',
     homeroom_teacher: '',
     counseling_teacher: '',
@@ -78,7 +78,7 @@ export default function Transactions() {
         student_id: '',
         achievement_type: 'Akademik',
         competition_name: '',
-        rank: '1',
+        rank: 'Juara 1',
         level: 'Antar Sekolah',
         homeroom_teacher: '',
         counseling_teacher: '',
@@ -154,7 +154,7 @@ export default function Transactions() {
               student_id: '',
               achievement_type: 'Akademik',
               competition_name: '',
-              rank: '1',
+              rank: 'Juara 1',
               level: 'Antar Sekolah',
               homeroom_teacher: '',
               counseling_teacher: '',
@@ -215,7 +215,7 @@ export default function Transactions() {
                     </td>
                     <td className="px-6 py-4 text-slate-700">{t.competition_name}</td>
                     <td className="px-6 py-4 text-slate-600 text-sm">{t.level || '-'}</td>
-                    <td className="px-6 py-4 font-medium text-slate-900">Juara {t.rank}</td>
+                    <td className="px-6 py-4 font-medium text-slate-900">{t.rank}</td>
                     <td className="px-6 py-4">
                       {t.certificate_file ? (
                         <a href={t.certificate_file} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 text-sm font-medium">
@@ -306,8 +306,8 @@ export default function Transactions() {
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">Juara / Peringkat</label>
                     <select required value={formData.rank} onChange={e => setFormData({...formData, rank: e.target.value})} className="w-full rounded-xl border-slate-300 border py-1.5 px-3 text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                        <option key={num} value={num}>Juara {num}</option>
+                      {['Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1', 'Harapan 2', 'Harapan 3', 'Partisipasi'].map(rank => (
+                        <option key={rank} value={rank}>{rank}</option>
                       ))}
                     </select>
                   </div>

@@ -107,7 +107,7 @@ export default function Reports() {
                     </td>
                     <td className="px-6 py-4">
                       <p className="font-medium text-slate-900">{t.competition_name}</p>
-                      <p className="text-xs text-slate-500">{t.achievement_type} - Juara {t.rank}</p>
+                      <p className="text-xs text-slate-500">{t.achievement_type} - {t.rank}</p>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm text-slate-700">Wali: {t.homeroom_teacher}</p>
