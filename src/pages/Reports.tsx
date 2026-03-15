@@ -6,6 +6,7 @@ import { getTransactions, getStudents } from '../services/db';
 export default function Reports() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [selectedClass, setSelectedClass] = useState('All');
 
   useEffect(() => {
     const fetchReportsData = async () => {
@@ -33,8 +34,18 @@ export default function Reports() {
     fetchReportsData();
   }, []);
 
+  const uniqueClasses = Array.from(new Set(transactions.map(t => t.class_name))).sort();
+
+  const filteredTransactions = transactions.filter(t => {
+    const matchesSearch = t.student_name.toLowerCase().includes(search.toLowerCase()) || 
+                         t.competition_name.toLowerCase().includes(search.toLowerCase()) ||
+                         t.class_name.toLowerCase().includes(search.toLowerCase());
+    const matchesClass = selectedClass === 'All' || t.class_name === selectedClass;
+    return matchesSearch && matchesClass;
+  });
+
   const handleDownloadExcel = () => {
-    const dataToExport = transactions.map(t => ({
+    const dataToExport = filteredTransactions.map(t => ({
       'Tanggal': t.date,
       'Nama Siswa': t.student_name,
       'Kelas': t.class_name,
@@ -50,12 +61,6 @@ export default function Reports() {
     XLSX.utils.book_append_sheet(wb, ws, 'Laporan Prestasi');
     XLSX.writeFile(wb, `Laporan_Prestasi_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
-
-  const filteredTransactions = transactions.filter(t => 
-    t.student_name.toLowerCase().includes(search.toLowerCase()) || 
-    t.competition_name.toLowerCase().includes(search.toLowerCase()) ||
-    t.class_name.toLowerCase().includes(search.toLowerCase())
-  );
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
@@ -74,16 +79,29 @@ export default function Reports() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
-          <div className="relative flex-1 max-w-md">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-slate-50/50">
+          <div className="relative flex-1 w-full max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
-              placeholder="Cari nama, kelas, atau lomba..." 
+              placeholder="Cari nama atau lomba..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm"
             />
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-sm font-medium text-slate-500 whitespace-nowrap">Filter Kelas:</span>
+            <select 
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="w-full sm:w-auto pl-3 pr-8 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm bg-white"
+            >
+              <option value="All">Semua Kelas</option>
+              {uniqueClasses.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="overflow-x-auto">
