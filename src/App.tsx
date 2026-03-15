@@ -4,9 +4,7 @@
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
-import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Master from './pages/Master';
 import Transactions from './pages/Transactions';
@@ -19,14 +17,13 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="master" element={<ProtectedRoute><Master /></ProtectedRoute>} />
-            <Route path="transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-            <Route path="reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="master" element={<Master />} />
+            <Route path="transactions" element={<Transactions />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>

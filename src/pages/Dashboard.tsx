@@ -97,7 +97,7 @@ export default function Dashboard() {
   }, [chartGrade, tableGrade, tableLimit]);
 
   if (!stats) return <div className="p-8 text-slate-500">Memuat data...</div>;
-  if (stats.error) return <div className="p-8 text-red-500">Gagal memuat data. Pastikan Anda sudah login.</div>;
+  if (stats.error) return <div className="p-8 text-red-500">Gagal memuat data.</div>;
 
   const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444'];
 
