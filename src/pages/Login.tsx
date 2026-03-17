@@ -21,7 +21,13 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error(err);
-      setError('Gagal masuk. Silakan coba lagi.');
+      if (err.code === 'auth/unauthorized-domain') {
+        setError('Domain ini belum diizinkan di Firebase Console. Pastikan domain Vercel sudah ditambahkan di "Authorized Domains".');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Popup diblokir oleh browser. Silakan izinkan popup untuk situs ini.');
+      } else {
+        setError(`Gagal masuk: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
