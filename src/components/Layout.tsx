@@ -1,8 +1,22 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Database, FileText, PieChart, Settings } from 'lucide-react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Database, FileText, PieChart, Settings, LogOut, User as UserIcon } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -42,8 +56,39 @@ export default function Layout() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
-          {/* Removed logout button */}
+        <div className="p-4 border-t border-slate-100 space-y-2">
+          {user ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 px-4 py-2">
+                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
+                  ) : (
+                    <UserIcon className="w-4 h-4" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-800 truncate">{user.displayName || 'User'}</p>
+                  <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors font-medium"
+              >
+                <LogOut className="w-5 h-5" />
+                Keluar
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+            >
+              <UserIcon className="w-5 h-5" />
+              Masuk
+            </Link>
+          )}
         </div>
       </aside>
 
@@ -55,6 +100,11 @@ export default function Layout() {
             <img src="https://iili.io/KDFk4fI.png" alt="Logo" className="w-8 h-8 object-contain" referrerPolicy="no-referrer" />
             <h1 className="font-bold text-base text-slate-800 leading-tight">PRESTASI SISWA</h1>
           </div>
+          {user && (
+            <button onClick={handleLogout} className="text-red-600 p-2">
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
         </div>
         
         <Outlet />
