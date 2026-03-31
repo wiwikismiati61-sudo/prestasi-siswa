@@ -19,7 +19,7 @@ service cloud.firestore {
     }
     
     function isEditor() {
-      return isAuthenticated() && ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserRole() == 'editor') || isAdmin());
+      return isAuthenticated() && ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (getUserRole() == 'editor' || getUserRole() == 'kesiswaan')) || isAdmin());
     }
     
     function isViewer() {
@@ -30,9 +30,10 @@ service cloud.firestore {
     match /users/{userId} {
       // Anyone authenticated can read their own profile, admins can read all
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
       
-      // Allow the bootstrap admin to create their own record
-      allow create: if isAdmin() || (isAuthenticated() && request.auth.uid == userId && request.auth.token.email == "wiwikismiati61@guru.smp.belajar.id");
+      // Allow the bootstrap admin to create their own record, or any user to create a viewer profile
+      allow create: if isAdmin() || (isAuthenticated() && request.auth.uid == userId && (request.auth.token.email == "wiwikismiati61@guru.smp.belajar.id" || request.resource.data.role == 'viewer'));
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -60,7 +61,8 @@ service cloud.firestore {
     
     match /transactions/{docId} {
       allow read: if true;
-      allow create, update, delete: if isEditor();
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
     }
   }
 }

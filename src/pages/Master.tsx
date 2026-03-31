@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { Upload, Plus, Trash2, Search } from 'lucide-react';
-import { getStudents, getHomeroomTeachers, getCounselingTeachers, deleteStudent, deleteHomeroomTeacher, deleteCounselingTeacher, addStudent, addHomeroomTeacher, addCounselingTeacher, bulkAddStudents, bulkAddHomeroomTeachers, bulkAddCounselingTeachers } from '../services/db';
+import { Upload, Plus, Trash2, Search, Edit2, Check, X } from 'lucide-react';
+import { getStudents, getHomeroomTeachers, getCounselingTeachers, deleteStudent, deleteHomeroomTeacher, deleteCounselingTeacher, addStudent, addHomeroomTeacher, addCounselingTeacher, updateStudent, updateHomeroomTeacher, updateCounselingTeacher, bulkAddStudents, bulkAddHomeroomTeachers, bulkAddCounselingTeachers } from '../services/db';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Master() {
@@ -11,6 +11,8 @@ export default function Master() {
   const [homeroomTeachers, setHomeroomTeachers] = useState<any[]>([]);
   const [counselingTeachers, setCounselingTeachers] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<any>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const teacherFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -227,6 +229,36 @@ export default function Master() {
     }
   };
 
+  const startEdit = (item: any) => {
+    setEditingId(item.id);
+    setEditData({ ...item });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditData({});
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    
+    try {
+      if (activeTab === 'siswa') {
+        await updateStudent(editingId, editData);
+      } else if (activeTab === 'walikelas') {
+        await updateHomeroomTeacher(editingId, editData);
+      } else if (activeTab === 'bk') {
+        await updateCounselingTeacher(editingId, editData);
+      }
+      setEditingId(null);
+      setEditData({});
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menyimpan perubahan.');
+    }
+  };
+
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -318,20 +350,65 @@ export default function Master() {
                 filteredStudents.length > 0 ? (
                   filteredStudents.map((student) => (
                     <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-900">{student.name}</td>
+                      <td className="px-6 py-4 font-medium text-slate-900">
+                        {editingId === student.id ? (
+                          <input
+                            type="text"
+                            value={editData.name || ''}
+                            onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                            className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        ) : (
+                          student.name
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-slate-600">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
-                          {student.class_name}
-                        </span>
+                        {editingId === student.id ? (
+                          <input
+                            type="text"
+                            value={editData.class_name || ''}
+                            onChange={(e) => setEditData({ ...editData, class_name: e.target.value })}
+                            className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                            {student.class_name}
+                          </span>
+                        )}
                       </td>
                       {isEditor && (
                         <td className="px-6 py-4 text-right">
-                          <button 
-                            onClick={() => handleDelete(student.id)}
-                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {editingId === student.id ? (
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={saveEdit}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={cancelEdit}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => startEdit(student)}
+                                className="p-2 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDelete(student.id)}
+                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       )}
                     </tr>
@@ -347,15 +424,51 @@ export default function Master() {
                 currentTeachers.length > 0 ? (
                   currentTeachers.map((teacher) => (
                     <tr key={teacher.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-900">{teacher.name}</td>
+                      <td className="px-6 py-4 font-medium text-slate-900">
+                        {editingId === teacher.id ? (
+                          <input
+                            type="text"
+                            value={editData.name || ''}
+                            onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                            className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        ) : (
+                          teacher.name
+                        )}
+                      </td>
                       {isEditor && (
                         <td className="px-6 py-4 text-right">
-                          <button 
-                            onClick={() => handleDeleteTeacher(teacher.id, activeTab as 'walikelas' | 'bk')}
-                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {editingId === teacher.id ? (
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={saveEdit}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={cancelEdit}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => startEdit(teacher)}
+                                className="p-2 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteTeacher(teacher.id, activeTab as 'walikelas' | 'bk')}
+                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       )}
                     </tr>

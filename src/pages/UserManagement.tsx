@@ -11,7 +11,15 @@ interface UserData {
   username: string;
   displayName?: string;
   role: 'admin' | 'editor' | 'viewer';
+  active?: boolean;
 }
+
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import firebaseConfig from '../../firebase-applet-config.json';
+
+const secondaryApp = initializeApp(firebaseConfig, 'SecondaryApp');
+const secondaryAuth = getAuth(secondaryApp);
 
 export default function UserManagement() {
   const { isAdmin } = useAuth();
@@ -26,7 +34,7 @@ export default function UserManagement() {
     uid: '',
     username: '',
     password: '',
-    role: 'viewer' as 'admin' | 'editor' | 'viewer'
+    role: 'viewer' as 'admin' | 'editor' | 'viewer' | 'kesiswaan'
   });
 
   useEffect(() => {
@@ -45,6 +53,7 @@ export default function UserManagement() {
         usersData.push({
           ...data,
           uid: data.uid || doc.id,
+          active: data.active !== false
         } as UserData);
       });
       setUsers(usersData);
@@ -70,7 +79,8 @@ export default function UserManagement() {
         // Update existing user role/displayName in Firestore
         await updateDoc(doc(db, 'users', formData.uid), {
           username: formData.username,
-          role: formData.role
+          role: formData.role,
+          active: true
         });
       } else {
         // Create new user in Firebase Auth
@@ -81,7 +91,7 @@ export default function UserManagement() {
         const generatedEmail = `${formData.username.replace(/\s+/g, '').toLowerCase()}@smp.belajar.id`;
         
         try {
-          const userCredential = await createUserWithEmailAndPassword(auth, generatedEmail, formData.password);
+          const userCredential = await createUserWithEmailAndPassword(secondaryAuth, generatedEmail, formData.password);
           
           // Save to Firestore
           await setDoc(doc(db, 'users', userCredential.user.uid), {
@@ -89,13 +99,35 @@ export default function UserManagement() {
             email: generatedEmail,
             username: formData.username,
             role: formData.role,
+            active: true,
             createdAt: new Date().toISOString()
           });
         } catch (authError: any) {
           if (authError.code === 'auth/email-already-in-use') {
-            throw new Error('Username sudah digunakan. Silakan gunakan username lain.');
+            // The user exists in Auth but might be missing in Firestore (due to previous permission errors)
+            // Let's try to sign in to get their UID and create the Firestore document
+            try {
+              const { signInWithEmailAndPassword } = await import('firebase/auth');
+              const signInCredential = await signInWithEmailAndPassword(secondaryAuth, generatedEmail, formData.password);
+              
+              // Save to Firestore
+              await setDoc(doc(db, 'users', signInCredential.user.uid), {
+                uid: signInCredential.user.uid,
+                email: generatedEmail,
+                username: formData.username,
+                role: formData.role,
+                active: true,
+                createdAt: new Date().toISOString()
+              });
+            } catch (signInError: any) {
+              if (signInError.code === 'auth/wrong-password' || signInError.code === 'auth/invalid-credential') {
+                throw new Error('Username sudah digunakan dan password yang Anda masukkan salah. Jika ini akun Google, user harus login via Google terlebih dahulu.');
+              }
+              throw new Error('Username sudah digunakan. Silakan gunakan username lain.');
+            }
+          } else {
+            throw authError;
           }
-          throw authError;
         }
       }
       
@@ -119,13 +151,13 @@ export default function UserManagement() {
   };
 
   const handleDelete = async (uid: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus user ini? (Hanya menghapus data profil, bukan autentikasi)')) {
+    if (window.confirm('Apakah Anda yakin ingin menonaktifkan user ini? (User tidak akan bisa login lagi)')) {
       try {
-        await deleteDoc(doc(db, 'users', uid));
+        await updateDoc(doc(db, 'users', uid), { active: false });
         fetchUsers();
       } catch (err: any) {
-        console.error('Error deleting user:', err);
-        setError('Gagal menghapus user.');
+        console.error('Error deactivating user:', err);
+        setError('Gagal menonaktifkan user.');
       }
     }
   };
@@ -216,7 +248,7 @@ export default function UserManagement() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="admin">Full Access (Admin)</option>
-                  <option value="editor">Input data dan edit (Editor)</option>
+                  <option value="kesiswaan">Input data dan edit (Kesiswaan)</option>
                   <option value="viewer">Hanya Melihat (Viewer)</option>
                 </select>
               </div>
@@ -260,18 +292,19 @@ export default function UserManagement() {
                     <tr key={user.uid} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {user.username || user.displayName || user.email.split('@')[0]}
+                        {!user.active && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Nonaktif</span>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium
                           ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                            user.role === 'editor' ? 'bg-blue-100 text-blue-800' : 
+                            (user.role === 'editor' || user.role === 'kesiswaan') ? 'bg-blue-100 text-blue-800' : 
                             'bg-gray-100 text-gray-800'}`}
                         >
                           {user.role === 'admin' && <ShieldAlert size={12} />}
-                          {user.role === 'editor' && <Edit2 size={12} />}
+                          {(user.role === 'editor' || user.role === 'kesiswaan') && <Edit2 size={12} />}
                           {user.role === 'viewer' && <Eye size={12} />}
                           {user.role === 'admin' ? 'Full Access' : 
-                           user.role === 'editor' ? 'Input & Edit' : 'Hanya Melihat'}
+                           (user.role === 'editor' || user.role === 'kesiswaan') ? 'Kesiswaan (Input & Edit)' : 'Hanya Melihat'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

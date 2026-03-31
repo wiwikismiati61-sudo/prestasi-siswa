@@ -73,7 +73,7 @@ export default function Layout() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-slate-800 truncate">@{userData?.username || user.displayName || user.email?.split('@')[0]}</p>
-                  <p className="text-[10px] text-slate-500 truncate">{userData?.role === 'admin' ? 'Administrator' : userData?.role === 'editor' ? 'Editor' : 'Viewer'}</p>
+                  <p className="text-[10px] text-slate-500 truncate">{userData?.role === 'admin' ? 'Administrator' : (userData?.role === 'editor' || userData?.role === 'kesiswaan') ? 'Kesiswaan' : 'Viewer'}</p>
                 </div>
               </div>
               <button

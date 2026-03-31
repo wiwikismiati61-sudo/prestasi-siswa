@@ -120,6 +120,15 @@ export const addHomeroomTeacher = async (teacher: any) => {
   }
 };
 
+export const updateHomeroomTeacher = async (id: string, teacher: any) => {
+  try {
+    await updateDoc(doc(db, 'homeroom_teachers', id), teacher);
+    return { id, ...teacher };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `homeroom_teachers/${id}`);
+  }
+};
+
 export const deleteHomeroomTeacher = async (id: string) => {
   try {
     await deleteDoc(doc(db, 'homeroom_teachers', id));
@@ -157,6 +166,15 @@ export const addCounselingTeacher = async (teacher: any) => {
     return { id: docRef.id, ...teacher };
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, 'counseling_teachers');
+  }
+};
+
+export const updateCounselingTeacher = async (id: string, teacher: any) => {
+  try {
+    await updateDoc(doc(db, 'counseling_teachers', id), teacher);
+    return { id, ...teacher };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `counseling_teachers/${id}`);
   }
 };
 

@@ -4,7 +4,7 @@ import { getTransactions, getStudents, getHomeroomTeachers, getCounselingTeacher
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Transactions() {
-  const { isEditor } = useAuth();
+  const { isEditor, isAdmin } = useAuth();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [homeroomTeachers, setHomeroomTeachers] = useState<any[]>([]);
@@ -239,13 +239,15 @@ export default function Transactions() {
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button 
-                            onClick={() => setDeletingId(t.id)}
-                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Hapus"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {isAdmin && (
+                            <button 
+                              onClick={() => setDeletingId(t.id)}
+                              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}

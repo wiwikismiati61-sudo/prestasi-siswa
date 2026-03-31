@@ -8,7 +8,8 @@ interface UserData {
   email: string;
   username: string;
   displayName?: string;
-  role: 'admin' | 'editor' | 'viewer';
+  role: 'admin' | 'editor' | 'viewer' | 'kesiswaan';
+  active?: boolean;
 }
 
 interface AuthContextType {
@@ -43,7 +44,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
-            setUserData(userDoc.data() as UserData);
+            const data = userDoc.data() as UserData;
+            if (data.active === false) {
+              setUserData(null);
+            } else {
+              setUserData(data);
+            }
           } else if (currentUser.email === 'wiwikismiati61@guru.smp.belajar.id') {
              // Bootstrap default admin
              const newAdmin: UserData = {
@@ -63,7 +69,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                setUserData(newAdmin);
              }
           } else {
-            setUserData(null);
+            // Auto-create viewer profile for new users
+            const newUser: UserData = {
+              uid: currentUser.uid,
+              email: currentUser.email || '',
+              username: currentUser.displayName || currentUser.email?.split('@')[0] || 'user',
+              role: 'viewer',
+              active: true
+            };
+            try {
+              await setDoc(doc(db, 'users', currentUser.uid), newUser);
+              setUserData(newUser);
+            } catch (e) {
+              console.error("Error creating default user doc:", e);
+              setUserData(null);
+            }
           }
         } catch (error) {
           console.error("Error fetching user role:", error);
@@ -79,7 +99,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const isAdmin = userData?.role === 'admin';
-  const isEditor = isAdmin || userData?.role === 'editor';
+  const isEditor = isAdmin || userData?.role === 'editor' || userData?.role === 'kesiswaan';
   const isViewer = isEditor || userData?.role === 'viewer';
 
   return (
