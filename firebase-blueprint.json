@@ -2,21 +2,29 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "A user of the application, usually an admin.",
+      "description": "A user of the application with specific access rights.",
       "type": "object",
       "properties": {
         "email": {
           "type": "string",
           "format": "email",
-          "description": "User's email address"
+          "description": "User's email address (used for login)"
+        },
+        "username": {
+          "type": "string",
+          "description": "User's username"
         },
         "role": {
           "type": "string",
-          "enum": ["admin", "user"],
-          "description": "Role of the user"
+          "enum": ["admin", "editor", "viewer"],
+          "description": "Role of the user: admin (Full Access), editor (Input and edit), viewer (Read Only)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of creation"
         }
       },
-      "required": ["email", "role"]
+      "required": ["email", "username", "role"]
     },
     "Student": {
       "title": "Student",

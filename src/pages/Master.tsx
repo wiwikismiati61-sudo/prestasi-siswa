@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Upload, Plus, Trash2, Search } from 'lucide-react';
 import { getStudents, getHomeroomTeachers, getCounselingTeachers, deleteStudent, deleteHomeroomTeacher, deleteCounselingTeacher, addStudent, addHomeroomTeacher, addCounselingTeacher, bulkAddStudents, bulkAddHomeroomTeachers, bulkAddCounselingTeachers } from '../services/db';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Master() {
+  const { isEditor } = useAuth();
   const [activeTab, setActiveTab] = useState<'siswa' | 'walikelas' | 'bk'>('siswa');
   const [students, setStudents] = useState<any[]>([]);
   const [homeroomTeachers, setHomeroomTeachers] = useState<any[]>([]);
@@ -247,20 +249,24 @@ export default function Master() {
           <p className="text-sm sm:text-base text-slate-500 mt-1">Kelola data referensi untuk pencatatan prestasi.</p>
         </div>
         <div className="flex gap-4">
-          <input 
-            type="file" 
-            accept=".xlsx, .xls" 
-            className="hidden" 
-            ref={activeTab === 'siswa' ? fileInputRef : teacherFileInputRef}
-            onChange={activeTab === 'siswa' ? handleFileUpload : handleFileUploadTeachers}
-          />
-          <button 
-            onClick={() => activeTab === 'siswa' ? fileInputRef.current?.click() : teacherFileInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors shadow-sm font-medium w-full sm:w-auto"
-          >
-            <Upload className="w-4 h-4" />
-            Upload Excel {activeTab === 'siswa' ? 'Siswa' : activeTab === 'walikelas' ? 'Wali Kelas' : 'Guru BK'}
-          </button>
+          {isEditor && (
+            <>
+              <input 
+                type="file" 
+                accept=".xlsx, .xls" 
+                className="hidden" 
+                ref={activeTab === 'siswa' ? fileInputRef : teacherFileInputRef}
+                onChange={activeTab === 'siswa' ? handleFileUpload : handleFileUploadTeachers}
+              />
+              <button 
+                onClick={() => activeTab === 'siswa' ? fileInputRef.current?.click() : teacherFileInputRef.current?.click()}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors shadow-sm font-medium w-full sm:w-auto"
+              >
+                <Upload className="w-4 h-4" />
+                Upload Excel {activeTab === 'siswa' ? 'Siswa' : activeTab === 'walikelas' ? 'Wali Kelas' : 'Guru BK'}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -304,7 +310,7 @@ export default function Master() {
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-sm">
                 <th className="px-6 py-4 font-medium">Nama {activeTab === 'siswa' ? 'Siswa' : activeTab === 'walikelas' ? 'Wali Kelas' : 'Guru BK'}</th>
                 {activeTab === 'siswa' && <th className="px-6 py-4 font-medium">Kelas</th>}
-                <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                {isEditor && <th className="px-6 py-4 font-medium text-right">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -318,14 +324,16 @@ export default function Master() {
                           {student.class_name}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <button 
-                          onClick={() => handleDelete(student.id)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+                      {isEditor && (
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            onClick={() => handleDelete(student.id)}
+                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
@@ -340,14 +348,16 @@ export default function Master() {
                   currentTeachers.map((teacher) => (
                     <tr key={teacher.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 font-medium text-slate-900">{teacher.name}</td>
-                      <td className="px-6 py-4 text-right">
-                        <button 
-                          onClick={() => handleDeleteTeacher(teacher.id, activeTab as 'walikelas' | 'bk')}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+                      {isEditor && (
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            onClick={() => handleDeleteTeacher(teacher.id, activeTab as 'walikelas' | 'bk')}
+                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (

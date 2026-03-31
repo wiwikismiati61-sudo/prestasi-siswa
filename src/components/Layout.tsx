@@ -7,7 +7,7 @@ import { signOut } from 'firebase/auth';
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, userData, isAdmin } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -25,6 +25,10 @@ export default function Layout() {
     { path: '/reports', icon: PieChart, label: 'Laporan' },
     { path: '/settings', icon: Settings, label: 'Pengaturan' },
   ];
+
+  if (isAdmin) {
+    navItems.push({ path: '/users', icon: UserIcon, label: 'Manajemen User' });
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 flex-col md:flex-row">
@@ -68,8 +72,8 @@ export default function Layout() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate">{user.displayName || 'User'}</p>
-                  <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
+                  <p className="text-sm font-bold text-slate-800 truncate">@{userData?.username || user.displayName || user.email?.split('@')[0]}</p>
+                  <p className="text-[10px] text-slate-500 truncate">{userData?.role === 'admin' ? 'Administrator' : userData?.role === 'editor' ? 'Editor' : 'Viewer'}</p>
                 </div>
               </div>
               <button

@@ -3,46 +3,74 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
+interface UserData {
+  uid: string;
+  email: string;
+  username: string;
+  displayName?: string;
+  role: 'admin' | 'editor' | 'viewer';
+}
+
 interface AuthContextType {
   user: User | null;
+  userData: UserData | null;
   isAdmin: boolean;
+  isEditor: boolean;
+  isViewer: boolean;
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, isAdmin: false, loading: true });
+const AuthContext = createContext<AuthContextType>({ 
+  user: null, 
+  userData: null,
+  isAdmin: false, 
+  isEditor: false,
+  isViewer: false,
+  loading: true 
+});
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Check if user is admin
         try {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          if (userDoc.exists() && userDoc.data().role === 'admin') {
-            setIsAdmin(true);
-          } else if (currentUser.email === 'wiwikismiati61@guru.smp.belajar.id' && currentUser.emailVerified) {
+          if (userDoc.exists()) {
+            setUserData(userDoc.data() as UserData);
+          } else if (currentUser.email === 'wiwikismiati61@guru.smp.belajar.id') {
              // Bootstrap default admin
-             await setDoc(doc(db, 'users', currentUser.uid), {
+             const newAdmin: UserData = {
+               uid: currentUser.uid,
                email: currentUser.email,
+               username: 'admin',
+               displayName: currentUser.displayName || 'Admin',
                role: 'admin'
-             });
-             setIsAdmin(true);
+             };
+             try {
+               await setDoc(doc(db, 'users', currentUser.uid), newAdmin);
+               setUserData(newAdmin);
+             } catch (e) {
+               console.error("Error bootstrapping admin:", e);
+               // Even if it fails to save to Firestore, grant admin rights locally for this session
+               // so they can fix the rules or perform necessary actions
+               setUserData(newAdmin);
+             }
           } else {
-            setIsAdmin(false);
+            setUserData(null);
           }
         } catch (error) {
           console.error("Error fetching user role:", error);
-          setIsAdmin(false);
+          setUserData(null);
         }
       } else {
-        setIsAdmin(false);
+        setUserData(null);
       }
       setLoading(false);
     });
@@ -50,8 +78,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return unsubscribe;
   }, []);
 
+  const isAdmin = userData?.role === 'admin';
+  const isEditor = isAdmin || userData?.role === 'editor';
+  const isViewer = isEditor || userData?.role === 'viewer';
+
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading }}>
+    <AuthContext.Provider value={{ user, userData, isAdmin, isEditor, isViewer, loading }}>
       {children}
     </AuthContext.Provider>
   );

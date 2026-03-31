@@ -1,8 +1,66 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserRole() == 'admin') || 
+        request.auth.token.email == "wiwikismiati61@guru.smp.belajar.id"
+      );
+    }
+    
+    function isEditor() {
+      return isAuthenticated() && ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserRole() == 'editor') || isAdmin());
+    }
+    
+    function isViewer() {
+      return isAuthenticated() && ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserRole() == 'viewer') || isEditor());
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Anyone authenticated can read their own profile, admins can read all
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      
+      // Allow the bootstrap admin to create their own record
+      allow create: if isAdmin() || (isAuthenticated() && request.auth.uid == userId && request.auth.token.email == "wiwikismiati61@guru.smp.belajar.id");
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Data collections
+    match /students/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isEditor();
+    }
+    
+    match /teachers/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isEditor();
+    }
+    
+    match /homeroom_teachers/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isEditor();
+    }
+    
+    match /counseling_teachers/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isEditor();
+    }
+    
+    match /transactions/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isEditor();
     }
   }
 }

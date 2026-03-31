@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, FileText, Search, Edit2 } from 'lucide-react';
 import { getTransactions, getStudents, getHomeroomTeachers, getCounselingTeachers, addTransaction, updateTransaction, deleteTransaction } from '../services/db';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Transactions() {
+  const { isEditor } = useAuth();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [homeroomTeachers, setHomeroomTeachers] = useState<any[]>([]);
@@ -146,28 +148,30 @@ export default function Transactions() {
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Data Transaksi Prestasi</h1>
           <p className="text-sm sm:text-base text-slate-500 mt-1">Catat dan kelola pencapaian siswa.</p>
         </div>
-        <button 
-          onClick={() => {
-            setEditingId(null);
-            setFormData({
-              date: new Date().toISOString().split('T')[0],
-              student_id: '',
-              achievement_type: 'Akademik',
-              competition_name: '',
-              rank: 'Juara 1',
-              level: 'Antar Sekolah',
-              homeroom_teacher: '',
-              counseling_teacher: '',
-              certificate: null
-            });
-            setSelectedClass('');
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          Tambah Prestasi
-        </button>
+        {isEditor && (
+          <button 
+            onClick={() => {
+              setEditingId(null);
+              setFormData({
+                date: new Date().toISOString().split('T')[0],
+                student_id: '',
+                achievement_type: 'Akademik',
+                competition_name: '',
+                rank: 'Juara 1',
+                level: 'Antar Sekolah',
+                homeroom_teacher: '',
+                counseling_teacher: '',
+                certificate: null
+              });
+              setSelectedClass('');
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Tambah Prestasi
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -194,7 +198,7 @@ export default function Transactions() {
                 <th className="px-6 py-4 font-medium">Tingkat</th>
                 <th className="px-6 py-4 font-medium">Peringkat</th>
                 <th className="px-6 py-4 font-medium">Sertifikat</th>
-                <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                {isEditor && <th className="px-6 py-4 font-medium text-right">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -225,24 +229,26 @@ export default function Transactions() {
                         <span className="text-slate-400 text-sm italic">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => handleEdit(t)}
-                          className="p-2 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => setDeletingId(t.id)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Hapus"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+                    {isEditor && (
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleEdit(t)}
+                            className="p-2 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => setDeletingId(t.id)}
+                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Hapus"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               ) : (
