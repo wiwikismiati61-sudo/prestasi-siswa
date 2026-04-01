@@ -11,6 +11,7 @@ export default function Transactions() {
   const [counselingTeachers, setCounselingTeachers] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [filterClass, setFilterClass] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -133,10 +134,12 @@ export default function Transactions() {
     };
   });
 
-  const filteredTransactions = enrichedTransactions.filter(t => 
-    (t.student_name || '').toLowerCase().includes(search.toLowerCase()) || 
-    (t.competition_name || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTransactions = enrichedTransactions.filter(t => {
+    const matchSearch = (t.student_name || '').toLowerCase().includes(search.toLowerCase()) || 
+                        (t.competition_name || '').toLowerCase().includes(search.toLowerCase());
+    const matchClass = filterClass ? t.class_name === filterClass : true;
+    return matchSearch && matchClass;
+  });
 
   const uniqueClasses = Array.from(new Set(students.map(s => s.class_name))).sort();
   const filteredStudents = selectedClass ? students.filter(s => s.class_name === selectedClass) : [];
@@ -175,8 +178,8 @@ export default function Transactions() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
-          <div className="relative flex-1 max-w-md">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center gap-4 bg-slate-50/50">
+          <div className="relative w-full sm:flex-1 sm:max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
@@ -186,19 +189,31 @@ export default function Transactions() {
               className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm"
             />
           </div>
+          <div className="w-full sm:w-auto">
+            <select
+              value={filterClass}
+              onChange={(e) => setFilterClass(e.target.value)}
+              className="w-full sm:w-48 px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm bg-white"
+            >
+              <option value="">Semua Kelas</option>
+              {uniqueClasses.map((cls: any) => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-sm">
-                <th className="px-6 py-4 font-medium">Tanggal</th>
-                <th className="px-6 py-4 font-medium">Siswa</th>
-                <th className="px-6 py-4 font-medium">Jenis</th>
-                <th className="px-6 py-4 font-medium">Lomba</th>
-                <th className="px-6 py-4 font-medium">Tingkat</th>
-                <th className="px-6 py-4 font-medium">Peringkat</th>
-                <th className="px-6 py-4 font-medium">Sertifikat</th>
-                {isEditor && <th className="px-6 py-4 font-medium text-right">Aksi</th>}
+            <thead className="sticky top-0 z-10 bg-slate-50">
+              <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                <th className="px-6 py-4 font-medium bg-slate-50">Tanggal</th>
+                <th className="px-6 py-4 font-medium bg-slate-50">Siswa</th>
+                <th className="px-6 py-4 font-medium bg-slate-50">Jenis</th>
+                <th className="px-6 py-4 font-medium bg-slate-50">Lomba</th>
+                <th className="px-6 py-4 font-medium bg-slate-50">Tingkat</th>
+                <th className="px-6 py-4 font-medium bg-slate-50">Peringkat</th>
+                <th className="px-6 py-4 font-medium bg-slate-50">Sertifikat</th>
+                {isEditor && <th className="px-6 py-4 font-medium text-right bg-slate-50">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
