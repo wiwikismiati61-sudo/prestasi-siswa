@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, writeBatch, setDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 enum OperationType {
@@ -232,5 +232,50 @@ export const deleteTransaction = async (id: string) => {
     await deleteDoc(doc(db, 'transactions', id));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `transactions/${id}`);
+  }
+};
+
+export const getFullBackup = async () => {
+  const collections = ['students', 'homeroom_teachers', 'counseling_teachers', 'transactions', 'users'];
+  const backup: any = {};
+  
+  for (const colName of collections) {
+    try {
+      const snapshot = await getDocs(collection(db, colName));
+      backup[colName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error(`Error backing up ${colName}:`, error);
+      backup[colName] = [];
+    }
+  }
+  
+  return backup;
+};
+
+export const restoreFullBackup = async (backupData: any) => {
+  const collections = ['students', 'homeroom_teachers', 'counseling_teachers', 'transactions', 'users'];
+  
+  for (const colName of collections) {
+    try {
+      // 1. Delete all existing docs in the collection
+      const snapshot = await getDocs(collection(db, colName));
+      const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      
+      // 2. Add docs from backup
+      if (backupData[colName]) {
+        const addPromises = backupData[colName].map((item: any) => {
+          const { id, ...data } = item;
+          if (id) {
+            return setDoc(doc(db, colName, id), data);
+          }
+          return Promise.resolve();
+        });
+        await Promise.all(addPromises);
+      }
+    } catch (error) {
+      console.error(`Error restoring ${colName}:`, error);
+      throw error;
+    }
   }
 };
